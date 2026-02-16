@@ -15,7 +15,6 @@
         --fuente: 'Inter', sans-serif;
     }
 
-    /* Reset y Scroll suave */
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
     
     #viewport { 
@@ -31,11 +30,9 @@
         transform-origin: 0 0; 
         transition: transform 0.2s ease-out; 
         display: inline-block;
-        /* Truco anti-parpadeo */
         transform: translateZ(0);
     }
 
-    /* ADAPTACIÓN HALL 2: Quitamos ancho fijo, dejamos que se adapte */
     img { display: block; image-rendering: high-quality; max-width: none; }
 
     /* MESAS */
@@ -47,13 +44,13 @@
         transform: translateZ(0); 
     }
     
-    /* Estilos específicos por tipo si quieres diferenciar colores */
-    .mesa.sport { border-color: var(--verde-sport); background: rgba(0, 255, 180, 0.25); }
+    /* Diferenciación visual opcional para Commercial */
+    .mesa.commercial { border-color: #3498db; background: rgba(52, 152, 219, 0.25); }
     
     .mesa.agotada {
         background: rgba(231, 76, 60, 0.4) !important;
         border-color: var(--rojo-sold) !important;
-        pointer-events: none; /* No clickable si está vendida */
+        pointer-events: none;
     }
 
     .mesa:hover, .mesa:active { 
@@ -62,7 +59,7 @@
         box-shadow: 0 0 20px rgba(255,255,255,0.5); 
     }
 
-    /* TOOLTIP (Estilo Original Hall 1) */
+    /* TOOLTIP */
     .custom-tooltip-wrapper {
         position: absolute; bottom: 140%; left: 50%;
         transform: translateX(-50%) translateY(10px);
@@ -83,6 +80,9 @@
     .tooltip-value { font-size: 26px; font-weight: 800; color: #2d3748; }
     .tooltip-footer { padding: 14px; font-size: 18px; font-weight: 700; color: white; background: var(--verde-deep); display: flex; justify-content: center; }
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
+    
+    /* Color azul para footer de mesas Commercial */
+    .mesa.commercial .tooltip-footer { background: #3498db; }
 
     /* CONTROLES */
     .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 10000; }
@@ -122,8 +122,7 @@
     const viewport = document.getElementById('viewport');
     const mapImg = document.getElementById('map-img');
     
-    // URL DEL CSV DE GOOGLE SHEETS
-    // Asegúrate de que tu Excel tiene los nuevos IDs (ej: DIECAST-A-1, MANGACOM-B-5, etc.)
+    // URL CSV - Asegúrate de que los IDs coinciden (TCG-G-1, etc.)
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
 
     async function cargarMesas() {
@@ -138,31 +137,25 @@
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
                 const parts = info.split('-');
-                // Lógica de nombres: TCG-A-1 -> Sección: TCG-A, Mesa: 1
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
                 // --- LÓGICA DE PRECIOS ACTUALIZADA ---
-                let type = "Commercial Table"; 
-                let price = "250,00 €"; // Precio base para mesas grandes (si las hay)
+                
+                // 1. Por defecto todo es Collector a 70€
+                let type = "Collector Table";
+                let price = "70,00 €";
 
-                // Detectamos si es una de las mesas standard (TCG, SPORT, DIECAST, MANGA, FIGURES)
-                // Ajusta aquí los nombres si cambian
-                if (
-                    info.includes("TCG") || 
-                    info.includes("SPORT") || 
-                    info.includes("DIECAST") || 
-                    info.includes("FIGURES") || 
-                    info.includes("MANGACOM")
-                ) { 
-                    type = "Collector Table"; 
-                    price = "100,00 €"; 
+                // 2. Excepción: DIECAST-A y DIECAST-B son Commercial a 100€
+                if (info.startsWith("DIECAST-A") || info.startsWith("DIECAST-B")) {
+                    type = "Commercial Table";
+                    price = "250,00 €";
+                    m.classList.add('commercial'); // Clase extra para diferenciar color si quieres
                 }
 
                 const isAgotada = m.classList.contains('agotada');
                 const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
 
-                // Tooltip Original
                 m.innerHTML = `
                     <div class="custom-tooltip-wrapper">
                         <div class="tooltip-row">
@@ -173,7 +166,6 @@
                     </div>`;
             });
             
-            // Esperar a la imagen para el FIT
             if(mapImg.complete) fit();
             else mapImg.onload = fit;
 
@@ -205,7 +197,7 @@
 
     function zoom(f) { 
         let newScale = scale * f;
-        if (newScale >= 0.01 && newScale <= 3.0) { // Límite ampliado para ver detalles
+        if (newScale >= 0.01 && newScale <= 3.0) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
         }
@@ -220,7 +212,6 @@
     }
 
     function fit() { 
-        // Lógica automática basada en el ancho real de Hall 2.png
         const imgWidth = mapImg.naturalWidth || 5000;
         scale = (window.innerWidth / imgWidth) * 0.9; 
         if(scale < 0.01) scale = 0.01;
