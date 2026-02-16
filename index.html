@@ -3,136 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 2 - Puzzle Builder</title>
+    <title>HALL 2 - Ultimate Builder</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --verde-base: #2ecc71;
-        --verde-deep: #27ae60;
-        --azul-sel: #3498db;
-        --rojo-del: #e74c3c;
+        --azul-sel: #00d2d3;
+        --rojo-del: #ff6b6b;
+        --dark-bg: #222f3e;
+        --panel-bg: #ffffff;
         --fuente: 'Inter', sans-serif;
     }
 
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #2d3436; font-family: var(--fuente); }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--dark-bg); font-family: var(--fuente); }
     
-    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; }
-    #container { position: relative; transform-origin: 0 0; transition: transform 0.1s ease-out; display: inline-block; }
-    img { display: block; image-rendering: high-quality; max-width: none; pointer-events: none; /* La imagen no estorba al arrastrar */ }
+    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; cursor: grab; }
+    #viewport:active { cursor: grabbing; }
+    
+    #container { position: relative; transform-origin: 0 0; transition: transform 0.05s ease-out; display: inline-block; }
+    img { display: block; image-rendering: high-quality; max-width: none; pointer-events: none; user-select: none; }
 
-    /* MESAS EN EL MAPA */
+    /* MESAS */
     .mesa { 
         position: absolute; 
         border: 1px solid var(--verde-base); 
-        background: rgba(46, 204, 113, 0.4); 
-        z-index: 10; cursor: grab; 
+        background: rgba(46, 204, 113, 0.3); 
+        z-index: 10; cursor: pointer; 
         box-sizing: border-box;
     }
     
-    .mesa:hover { background: rgba(46, 204, 113, 0.7); z-index: 100; }
+    .mesa:hover { background: rgba(46, 204, 113, 0.6); z-index: 100; border-color: white; }
     
     .mesa.selected {
-        border: 2px solid #00f2ff;
-        background: rgba(0, 242, 255, 0.6);
+        border: 2px solid var(--azul-sel);
+        background: rgba(0, 210, 211, 0.5);
         z-index: 200;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        box-shadow: 0 0 20px rgba(0, 210, 211, 0.4);
     }
 
-    .mesa.dragging { cursor: grabbing; opacity: 0.8; }
-
-    /* PANEL DE PIEZAS (PALETA) */
+    /* PALETA IZQUIERDA */
     #palette {
-        position: fixed; top: 20px; left: 20px; width: 220px;
-        background: white; padding: 15px; border-radius: 12px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 20000;
+        position: fixed; top: 10px; left: 10px; width: 240px; bottom: 10px;
+        background: var(--panel-bg); padding: 15px; border-radius: 8px;
+        box-shadow: 5px 0 30px rgba(0,0,0,0.3); z-index: 20000;
+        display: flex; flex-direction: column;
     }
-    #palette h3 { margin: 0 0 10px 0; font-size: 14px; color: #333; text-transform: uppercase; }
+    
+    #palette h3 { margin: 0 0 15px 0; font-size: 14px; color: #333; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    
+    .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
+    
+    .section-group { margin-bottom: 20px; }
+    .group-title { font-size: 11px; font-weight: 800; color: #888; margin-bottom: 5px; letter-spacing: 1px; }
     
     .piece-btn {
-        display: flex; align-items: center; gap: 10px;
-        width: 100%; padding: 10px; margin-bottom: 8px;
-        background: #f0f0f0; border: 1px solid #ddd; border-radius: 6px;
-        cursor: pointer; transition: all 0.2s;
+        display: flex; justify-content: space-between; align-items: center;
+        width: 100%; padding: 8px 12px; margin-bottom: 6px;
+        background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px;
+        cursor: pointer; transition: all 0.1s; font-size: 12px; font-weight: 600; color: #444;
     }
-    .piece-btn:hover { background: #e0e0e0; transform: translateX(5px); }
-    .piece-icon { width: 20px; height: 20px; background: var(--verde-base); border-radius: 2px; }
-    .piece-icon.horiz { width: 30px; height: 10px; }
-    .piece-icon.vert { width: 10px; height: 30px; }
-    .piece-label { font-size: 12px; font-weight: 600; color: #555; }
-
-    /* PANEL DE PROPIEDADES (DERECHA) */
-    #properties {
-        position: fixed; top: 20px; right: 20px; width: 280px;
-        background: white; padding: 20px; border-radius: 12px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 20000;
-        display: none; /* Se muestra al seleccionar */
-    }
-    #properties.active { display: block; }
+    .piece-btn:hover { background: #e0e0e0; transform: translateX(2px); border-color: #bbb; }
+    .piece-btn:active { transform: scale(0.98); }
     
-    .prop-row { margin-bottom: 12px; }
-    .prop-row label { display: block; font-size: 11px; font-weight: bold; color: #999; margin-bottom: 4px; }
-    .prop-row input { width: 100%; padding: 8px; border: 2px solid #eee; border-radius: 6px; font-family: monospace; font-weight: bold; }
-    .prop-row input:focus { border-color: var(--azul-sel); outline: none; }
+    .tag-v { background: #fab1a0; color: #d63031; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
+    .tag-h { background: #81ecec; color: #00cec9; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
+    .tag-d { background: #ffeaa7; color: #fdcb6e; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
 
-    .btn-action { width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-    .btn-delete { background: #ffebeb; color: var(--rojo-del); }
-    .btn-delete:hover { background: var(--rojo-del); color: white; }
-
-    /* BOTÓN EXPORTAR */
-    #export-bar {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: #2d3436; padding: 10px 20px; border-radius: 50px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 20000; display: flex; gap: 10px;
+    /* PROPIEDADES (FLOTANTE) */
+    #prop-float {
+        position: fixed; top: 20px; right: 20px; background: white; padding: 15px;
+        border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 20000;
+        width: 200px; display: none;
     }
-    .btn-exp { background: var(--verde-base); color: white; border: none; padding: 10px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; }
-    .btn-exp:hover { background: var(--verde-deep); }
+    #prop-float.active { display: block; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { from { transform: scale(0.9); opacity:0; } to { transform: scale(1); opacity:1; } }
 
-    /* TEXTAREA OCULTO PARA COPIAR */
+    .btn-action { width: 100%; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 12px; }
+    .btn-dup { background: var(--verde-base); color: white; }
+    .btn-del { background: var(--rojo-del); color: white; }
+
+    /* BARRA EXPORTAR */
+    #export-bar {
+        position: fixed; bottom: 20px; left: 270px; right: 20px;
+        pointer-events: none; display: flex; justify-content: center; z-index: 20000;
+    }
+    .btn-exp { pointer-events: auto; background: #2d3436; color: #00d2d3; border: 2px solid #00d2d3; padding: 12px 30px; border-radius: 50px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .btn-exp:hover { transform: translateY(-3px) scale(1.05); background: #00d2d3; color: white; }
+
     #clipboard-area { position: absolute; left: -9999px; }
-
 </style>
 </head>
 <body>
 
     <div id="palette">
-        <h3>🧩 Piezas Disponibles</h3>
-        <div class="piece-btn" onclick="spawnTable('vertical')">
-            <div class="piece-icon vert"></div>
-            <span class="piece-label">Vertical (Estándar)</span>
+        <h3>🏭 Fábrica de Mesas</h3>
+        <div class="scroll-area">
+            
+            <div class="section-group">
+                <div class="group-title">TCG / SPORT (Estándar)</div>
+                <div id="btn-container-std"></div>
+            </div>
+
+            <div class="section-group">
+                <div class="group-title">DIECAST (Anchas)</div>
+                <div id="btn-container-die"></div>
+            </div>
+
+            <div class="section-group">
+                <div class="group-title">MANGA / FIGURES</div>
+                <div id="btn-container-man"></div>
+            </div>
+
         </div>
-        <div class="piece-btn" onclick="spawnTable('horizontal')">
-            <div class="piece-icon horiz"></div>
-            <span class="piece-label">Horizontal (Estándar)</span>
-        </div>
-        <div class="piece-btn" onclick="spawnTable('diecast')">
-            <div class="piece-icon horiz" style="width:40px;"></div>
-            <span class="piece-label">Diecast / Larga</span>
-        </div>
-        <div style="font-size:10px; color:#777; margin-top:10px; line-height:1.4;">
-            1. Clicka una pieza para crearla.<br>
-            2. Arrástrala al mapa.<br>
-            3. Usa flechas para mover preciso.<br>
-            4. 'Supr' para borrar.
+        <div style="font-size:10px; color:#999; margin-top:10px; text-align:center; border-top:1px solid #eee; padding-top:10px;">
+            Rueda Ratón: <b>ZOOM</b><br>
+            Click + Arrastrar: <b>MOVER PIEZA</b><br>
+            Flechas: <b>PRECISIÓN</b><br>
+            Supr: <b>BORRAR</b>
         </div>
     </div>
 
-    <div id="properties">
-        <h3>⚙️ Editar Mesa</h3>
-        <div class="prop-row">
-            <label>ID / NOMBRE (Data-Info)</label>
-            <input type="text" id="prop-id" placeholder="Ej: TCG-A-1">
-        </div>
-        <div class="prop-row" style="display:flex; gap:10px;">
-            <div><label>Top (%)</label><input type="text" id="prop-top" readonly></div>
-            <div><label>Left (%)</label><input type="text" id="prop-left" readonly></div>
-        </div>
-        <button class="btn-action btn-delete" onclick="deleteSelected()">🗑️ Eliminar Mesa</button>
-        <button class="btn-action" style="background:#f0f0f0; margin-top:10px;" onclick="duplicateSelected()">✨ Duplicar (+1)</button>
+    <div id="prop-float">
+        <label style="font-size:10px; font-weight:bold; color:#999;">ID MESA</label>
+        <input type="text" id="inp-id" style="width:100%; padding:8px; border:2px solid #ddd; border-radius:4px; font-weight:bold; font-family:monospace; margin-bottom:10px;">
+        
+        <button class="btn-action btn-dup" onclick="duplicateSelected()">DUPLICAR (D)</button>
+        <button class="btn-action btn-del" onclick="deleteSelected()">ELIMINAR (Supr)</button>
     </div>
 
     <div id="export-bar">
-        <button class="btn-exp" onclick="exportHTML()">GENERAR CÓDIGO HTML</button>
-        <button class="btn-exp" style="background:#555;" onclick="fit()">Centrar Mapa</button>
+        <button class="btn-exp" onclick="exportHTML()">💾 EXPORTAR CÓDIGO HTML</button>
     </div>
 
     <div id="viewport">
@@ -145,11 +145,21 @@
     <textarea id="clipboard-area"></textarea>
 
 <script>
-    // --- CONFIGURACIÓN TAMAÑOS ---
-    const PRESETS = {
-        'vertical': { w: 0.2187, h: 1.1726 },
-        'horizontal': { w: 0.8613, h: 0.2977 },
-        'diecast': { w: 1.13, h: 0.2977 } // Basado en tu referencia anterior
+    // --- CONFIGURACIÓN DE TAMAÑOS ---
+    const SIZES = {
+        'std-v': { w: 0.2187, h: 1.1726 }, // Vertical Estándar
+        'std-h': { w: 0.8613, h: 0.2977 }, // Horizontal Estándar
+        'wide':  { w: 1.1300, h: 0.2977 }  // Diecast Ancha
+    };
+
+    // --- CONFIGURACIÓN DE BOTONES ---
+    // Añade aquí las letras que necesites
+    const GROUPS = {
+        'TCG': ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'],
+        'SPORT': ['A','B','C','D','E','F'],
+        'DIECAST': ['A','B','C','D'],
+        'MANGA': ['A','B'],
+        'FIGURES': ['A','B']
     };
 
     let scale = 0.2;
@@ -157,8 +167,8 @@
     const viewport = document.getElementById('viewport');
     const mapImg = document.getElementById('map-img');
     const capaMesas = document.getElementById('capa-mesas');
-    const propPanel = document.getElementById('properties');
-    const inputId = document.getElementById('prop-id');
+    const propPanel = document.getElementById('prop-float');
+    const inputId = document.getElementById('inp-id');
 
     let selectedElement = null;
     let isDragging = false;
@@ -166,93 +176,119 @@
 
     // 1. INICIALIZACIÓN
     window.onload = () => {
+        generateButtons();
         if(mapImg.complete) init();
         else mapImg.onload = init;
     };
 
     async function init() {
         fit();
-        // Cargar mesas existentes si las hay en el HTML
+        // Intentar cargar mesas previas
         try {
             const resp = await fetch('mesas.html?v=' + Date.now());
             if(resp.ok) {
-                const text = await resp.text();
-                // Limpiar texto para evitar duplicados del body/html si los hubiera
-                // Insertamos HTML puro
-                capaMesas.innerHTML = text;
-                // Añadimos listeners a las mesas cargadas
+                capaMesas.innerHTML = await resp.text();
                 document.querySelectorAll('.mesa').forEach(addInteractions);
             }
         } catch(e) {}
+        
+        // Listener de Zoom con Rueda
+        viewport.addEventListener('wheel', handleWheel, { passive: false });
     }
 
-    // 2. CREAR MESA (SPAWN)
-    window.spawnTable = function(type) {
-        const size = PRESETS[type];
+    // 2. GENERADOR DE BOTONES
+    function generateButtons() {
+        // TCG & SPORT (Mezcla de H y V)
+        const cStd = document.getElementById('btn-container-std');
+        ['TCG', 'SPORT'].forEach(cat => {
+            GROUPS[cat].forEach(letra => {
+                createBtn(cStd, `${cat}-${letra}`, 'std-v', 'V');
+                createBtn(cStd, `${cat}-${letra}`, 'std-h', 'H');
+            });
+        });
+
+        // DIECAST (Solo Wide)
+        const cDie = document.getElementById('btn-container-die');
+        GROUPS['DIECAST'].forEach(letra => {
+            createBtn(cDie, `DIECAST-${letra}`, 'wide', 'W');
+        });
+
+        // MANGA/FIGURES (Estándar)
+        const cMan = document.getElementById('btn-container-man');
+        ['MANGA', 'FIGURES'].forEach(cat => {
+            GROUPS[cat].forEach(letra => {
+                createBtn(cMan, `${cat}-${letra}`, 'std-v', 'V');
+                createBtn(cMan, `${cat}-${letra}`, 'std-h', 'H');
+            });
+        });
+    }
+
+    function createBtn(container, label, sizeKey, tag) {
+        const btn = document.createElement('div');
+        btn.className = 'piece-btn';
+        let colorClass = tag === 'V' ? 'tag-v' : (tag === 'W' ? 'tag-d' : 'tag-h');
+        
+        btn.innerHTML = `<span>${label}</span> <span class="${colorClass}">${tag}</span>`;
+        btn.onclick = () => spawnTable(label + '-1', sizeKey);
+        container.appendChild(btn);
+    }
+
+    // 3. SPAWN (CREAR MESA)
+    window.spawnTable = function(idName, sizeKey) {
+        const size = SIZES[sizeKey];
         const div = document.createElement('div');
         div.className = 'mesa';
-        div.setAttribute('data-info', 'NEW-1');
+        div.setAttribute('data-info', idName);
         
-        // Posicionar en el centro de la vista actual (aprox)
-        // Usamos valores fijos iniciales, luego se arrastra
+        // Calcular centro de la pantalla actual
+        const rect = viewport.getBoundingClientRect();
+        const centerX = (rect.width / 2 - container.getBoundingClientRect().left) / scale;
+        const centerY = (rect.height / 2 - container.getBoundingClientRect().top) / scale;
+
+        // Convertir a %
+        const leftP = (centerX / mapImg.naturalWidth) * 100;
+        const topP = (centerY / mapImg.naturalHeight) * 100;
+
         div.style.width = size.w + '%';
         div.style.height = size.h + '%';
-        div.style.top = '10%'; 
-        div.style.left = '10%';
+        div.style.top = topP.toFixed(4) + '%';
+        div.style.left = leftP.toFixed(4) + '%';
 
         capaMesas.appendChild(div);
         addInteractions(div);
         selectMesa(div);
     }
 
-    // 3. INTERACCIONES (DRAG & SELECT)
+    // 4. INTERACCIONES
     function addInteractions(el) {
-        el.addEventListener('mousedown', handleMouseDown);
+        el.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            selectMesa(el);
+            isDragging = true;
+            const rect = el.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+        });
     }
 
-    function handleMouseDown(e) {
-        e.stopPropagation(); // Evitar arrastrar el mapa si lo hubiera
-        selectMesa(e.target);
-        
-        isDragging = true;
-        
-        // Calcular offset del ratón respecto a la esquina de la mesa (en píxeles visuales)
-        const rect = e.target.getBoundingClientRect();
-        dragOffset.x = e.clientX - rect.left;
-        dragOffset.y = e.clientY - rect.top;
-    }
-
-    // LISTENER GLOBAL PARA ARRASTRAR
     document.addEventListener('mousemove', (e) => {
         if (!isDragging || !selectedElement) return;
         e.preventDefault();
 
         const containerRect = container.getBoundingClientRect();
-        
-        // Posición del ratón relativa al contenedor
-        // Restamos el offset del clic para que no salte
-        let x = e.clientX - containerRect.left - dragOffset.x;
-        let y = e.clientY - containerRect.top - dragOffset.y;
+        let x = (e.clientX - containerRect.left - dragOffset.x) / scale;
+        let y = (e.clientY - containerRect.top - dragOffset.y) / scale;
 
-        // Ajustar por la escala (CRÍTICO)
-        x = x / scale;
-        y = y / scale;
-
-        // Convertir a porcentajes
         const leftP = (x / mapImg.naturalWidth) * 100;
         const topP = (y / mapImg.naturalHeight) * 100;
 
         selectedElement.style.left = leftP.toFixed(4) + '%';
         selectedElement.style.top = topP.toFixed(4) + '%';
-
-        updatePropPanel();
     });
 
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
+    document.addEventListener('mouseup', () => isDragging = false);
 
-    // 4. SELECCIÓN Y PROPIEDADES
+    // 5. SELECCIÓN
     function selectMesa(el) {
         if(selectedElement) selectedElement.classList.remove('selected');
         selectedElement = el;
@@ -260,30 +296,36 @@
         
         propPanel.classList.add('active');
         inputId.value = selectedElement.getAttribute('data-info');
-        updatePropPanel();
-        inputId.focus(); // Foco directo para editar nombre
     }
 
-    // Actualizar ID al escribir
-    inputId.addEventListener('input', (e) => {
-        if(selectedElement) selectedElement.setAttribute('data-info', e.target.value);
-    });
-
-    function updatePropPanel() {
-        if(!selectedElement) return;
-        document.getElementById('prop-top').value = selectedElement.style.top;
-        document.getElementById('prop-left').value = selectedElement.style.left;
-    }
-
-    // 5. HERRAMIENTAS (BORRAR / DUPLICAR)
-    window.deleteSelected = function() {
-        if(selectedElement) {
-            selectedElement.remove();
+    // Click fuera para deseleccionar
+    viewport.addEventListener('mousedown', (e) => {
+        if(e.target === viewport || e.target === container || e.target === mapImg) {
+            if(selectedElement) selectedElement.classList.remove('selected');
             selectedElement = null;
             propPanel.classList.remove('active');
         }
+    });
+
+    // Actualizar nombre en tiempo real
+    inputId.addEventListener('input', (e) => {
+        if(selectedElement) selectedElement.setAttribute('data-info', e.target.value.toUpperCase());
+    });
+
+    // 6. ZOOM CON RUEDA (MEJORADO)
+    function handleWheel(e) {
+        if(e.ctrlKey || e.metaKey || true) { // Siempre activo
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            let newScale = scale * delta;
+            if(newScale > 0.05 && newScale < 10) {
+                scale = newScale;
+                container.style.transform = `scale(${scale})`;
+            }
+        }
     }
 
+    // 7. DUPLICAR Y BORRAR
     window.duplicateSelected = function() {
         if(!selectedElement) return;
         const clone = selectedElement.cloneNode(true);
@@ -291,21 +333,21 @@
         // Auto-incrementar ID
         const oldId = selectedElement.getAttribute('data-info');
         const parts = oldId.split('-');
-        if(parts.length > 1 && !isNaN(parts[parts.length-1])) {
+        if(!isNaN(parts[parts.length-1])) {
             parts[parts.length-1] = parseInt(parts[parts.length-1]) + 1;
             clone.setAttribute('data-info', parts.join('-'));
         }
 
-        // Mover un poco para que se vea
-        let top = parseFloat(selectedElement.style.top);
-        let left = parseFloat(selectedElement.style.left);
-        
-        // Inteligencia básica: Si es horizontal, mueve a la derecha. Si vertical, abajo.
+        // Desplazamiento inteligente
         const w = parseFloat(selectedElement.style.width);
         const h = parseFloat(selectedElement.style.height);
-        
-        if (w > h) left += (w + 0.05); // Horizontal
-        else top += (h + 0.05); // Vertical
+        let top = parseFloat(selectedElement.style.top);
+        let left = parseFloat(selectedElement.style.left);
+
+        // Si es más ancha que alta -> Duplicar a la derecha
+        if(w > h) left += (w + 0.02); 
+        // Si es más alta que ancha -> Duplicar abajo
+        else top += (h + 0.02);
 
         clone.style.top = top.toFixed(4) + '%';
         clone.style.left = left.toFixed(4) + '%';
@@ -315,67 +357,60 @@
         selectMesa(clone);
     }
 
-    // 6. TECLADO
+    window.deleteSelected = function() {
+        if(selectedElement) {
+            selectedElement.remove();
+            selectedElement = null;
+            propPanel.classList.remove('active');
+        }
+    }
+
+    // 8. TECLADO
     document.addEventListener('keydown', (e) => {
         if(!selectedElement) return;
         
-        // Mover con flechas
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        // Movimiento fino
+        if(e.key.startsWith('Arrow')) {
             e.preventDefault();
-            let top = parseFloat(selectedElement.style.top);
-            let left = parseFloat(selectedElement.style.left);
-            const step = 0.02; // Movimiento fino
-
-            if(e.key === 'ArrowUp') top -= step;
-            if(e.key === 'ArrowDown') top += step;
-            if(e.key === 'ArrowLeft') left -= step;
-            if(e.key === 'ArrowRight') left += step;
-
-            selectedElement.style.top = top.toFixed(4) + '%';
-            selectedElement.style.left = left.toFixed(4) + '%';
-            updatePropPanel();
+            const step = e.shiftKey ? 0.1 : 0.01; // Shift para ir más rápido
+            let t = parseFloat(selectedElement.style.top);
+            let l = parseFloat(selectedElement.style.left);
+            
+            if(e.key === 'ArrowUp') t -= step;
+            if(e.key === 'ArrowDown') t += step;
+            if(e.key === 'ArrowLeft') l -= step;
+            if(e.key === 'ArrowRight') l += step;
+            
+            selectedElement.style.top = t.toFixed(4) + '%';
+            selectedElement.style.left = l.toFixed(4) + '%';
         }
 
-        // Borrar
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            // Solo si no estamos escribiendo en el input
-            if (document.activeElement !== inputId) deleteSelected();
+        if(e.key === 'Delete' || e.key === 'Backspace') {
+            if(document.activeElement !== inputId) deleteSelected();
+        }
+        
+        if(e.key.toLowerCase() === 'd') {
+            if(document.activeElement !== inputId) duplicateSelected();
         }
     });
 
-    // 7. EXPORTAR
+    // 9. EXPORTAR
     window.exportHTML = function() {
         let html = "";
-        const mesas = document.querySelectorAll('.mesa');
-        mesas.forEach(m => {
-            // Limpiamos clases extra como 'selected' o 'dragging'
-            const info = m.getAttribute('data-info');
-            const style = m.getAttribute('style');
-            
-            // Reconstruimos el string limpio
-            html += `<div class="mesa" data-info="${info}" style="${style}"></div>\n`;
+        document.querySelectorAll('.mesa').forEach(m => {
+            html += `<div class="mesa" data-info="${m.getAttribute('data-info')}" style="${m.getAttribute('style')}"></div>\n`;
         });
-
-        const textArea = document.getElementById('clipboard-area');
-        textArea.value = html;
-        textArea.select();
+        const area = document.getElementById('clipboard-area');
+        area.value = html;
+        area.select();
         document.execCommand('copy');
-        alert("¡CÓDIGO COPIADO! Hay " + mesas.length + " mesas.\n\nPégalo en tu archivo mesas.html");
+        alert("¡Copiado! " + document.querySelectorAll('.mesa').length + " mesas listas.");
     }
 
-    // --- ZOOM Y PAN ---
     function fit() {
         const imgWidth = mapImg.naturalWidth || 5000;
         scale = (window.innerWidth / imgWidth) * 0.9;
         container.style.transform = `scale(${scale})`;
-    }
-    
-    window.zoom = function(f) {
-        let newScale = scale * f;
-        if(newScale > 0.02) {
-            scale = newScale;
-            container.style.transform = `scale(${scale})`;
-        }
     }
 
 </script>
