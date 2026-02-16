@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 2 - Builder V3 (Pro)</title>
+    <title>HALL 2 - Builder V4 (Perfect Ratio)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -44,7 +44,7 @@
 
     /* PALETA IZQUIERDA */
     #palette {
-        position: fixed; top: 10px; left: 10px; width: 250px; bottom: 10px;
+        position: fixed; top: 10px; left: 10px; width: 260px; bottom: 10px;
         background: var(--panel-bg); padding: 15px; border-radius: 8px;
         box-shadow: 5px 0 30px rgba(0,0,0,0.3); z-index: 20000;
         display: flex; flex-direction: column;
@@ -64,7 +64,6 @@
         cursor: pointer; transition: all 0.1s; font-size: 12px; font-weight: 600; color: #444;
     }
     .piece-btn:hover { background: #e0e0e0; transform: translateX(2px); border-color: #bbb; }
-    .piece-btn:active { transform: scale(0.98); }
     
     .tag-h { background: #81ecec; color: #00cec9; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
 
@@ -72,7 +71,7 @@
     #prop-float {
         position: fixed; top: 20px; right: 20px; background: white; padding: 15px;
         border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 20000;
-        width: 200px; display: none;
+        width: 220px; display: none;
     }
     #prop-float.active { display: block; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes popIn { from { transform: scale(0.9); opacity:0; } to { transform: scale(1); opacity:1; } }
@@ -82,9 +81,8 @@
     .btn-rot { background: var(--naranja-rot); color: white; }
     .btn-del { background: var(--rojo-del); color: white; }
 
-    /* BARRA EXPORTAR */
     #export-bar {
-        position: fixed; bottom: 20px; left: 280px; right: 20px;
+        position: fixed; bottom: 20px; left: 290px; right: 20px;
         pointer-events: none; display: flex; justify-content: center; z-index: 20000;
     }
     .btn-exp { pointer-events: auto; background: #2d3436; color: #00d2d3; border: 2px solid #00d2d3; padding: 12px 30px; border-radius: 50px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4); transition: transform 0.2s; }
@@ -96,27 +94,27 @@
 <body>
 
     <div id="palette">
-        <h3>🧩 Piezas Hall 2</h3>
+        <h3>🧩 Fábrica de Bloques</h3>
         <div class="scroll-area">
             
             <div class="section-group">
-                <div class="group-title">DIECAST (A-D)</div>
+                <div class="group-title">DIECAST</div>
                 <div id="btn-container-die"></div>
             </div>
 
             <div class="section-group">
-                <div class="group-title">FIGURES (A-C)</div>
+                <div class="group-title">FIGURES</div>
                 <div id="btn-container-fig"></div>
             </div>
 
             <div class="section-group">
-                <div class="group-title">MANGACOM (A-B)</div>
+                <div class="group-title">MANGA & COMIC</div>
                 <div id="btn-container-man"></div>
             </div>
 
         </div>
         <div style="font-size:10px; color:#999; margin-top:10px; text-align:center; border-top:1px solid #eee; padding-top:10px;">
-            'R' -> <b>GIRAR</b> (Vertical)<br>
+            'R' -> <b>GIRAR</b> (Ratio Correcto)<br>
             'D' -> <b>DUPLICAR</b><br>
             'Supr' -> <b>BORRAR</b><br>
             Rueda -> <b>ZOOM</b>
@@ -133,7 +131,7 @@
     </div>
 
     <div id="export-bar">
-        <button class="btn-exp" onclick="exportHTML()">💾 EXPORTAR CÓDIGO HTML</button>
+        <button class="btn-exp" onclick="exportHTML()">💾 EXPORTAR HTML</button>
     </div>
 
     <div id="viewport">
@@ -146,14 +144,11 @@
     <textarea id="clipboard-area"></textarea>
 
 <script>
-    // --- DIMENSIONES EXACTAS ---
-    // Horizontal (Base): width: 1.13%, height: 0.2977%
-    // Vertical (Girada): width: 0.2977%, height: 1.13%
-    
-    const BASE_W = 1.13;
-    const BASE_H = 0.2977;
+    // --- TAMAÑO BASE HORIZONTAL (Tu referencia) ---
+    const BASE_W_PCT = 1.13;
+    const BASE_H_PCT = 0.2977;
 
-    // --- GRUPOS ---
+    // --- GRUPOS PARA GENERAR BOTONES ---
     const GROUPS = {
         'DIECAST': ['A','B','C','D'],
         'FIGURES': ['A','B','C'],
@@ -171,8 +166,8 @@
     let selectedElement = null;
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
+    let imgRatio = 1; // Relación Ancho/Alto de la imagen
 
-    // 1. INICIALIZACIÓN
     window.onload = () => {
         generateButtons();
         if(mapImg.complete) init();
@@ -180,6 +175,9 @@
     };
 
     async function init() {
+        // Calcular Ratio de la imagen para corregir giros
+        imgRatio = mapImg.naturalWidth / mapImg.naturalHeight;
+        
         fit();
         try {
             const resp = await fetch('mesas.html?v=' + Date.now());
@@ -191,17 +189,13 @@
         viewport.addEventListener('wheel', handleWheel, { passive: false });
     }
 
-    // 2. GENERADOR DE BOTONES
     function generateButtons() {
-        // Diecast
         const cDie = document.getElementById('btn-container-die');
         GROUPS['DIECAST'].forEach(L => createBtn(cDie, `DIECAST-${L}`));
 
-        // Figures
         const cFig = document.getElementById('btn-container-fig');
         GROUPS['FIGURES'].forEach(L => createBtn(cFig, `FIGURES-${L}`));
 
-        // Mangacom
         const cMan = document.getElementById('btn-container-man');
         GROUPS['MANGACOM'].forEach(L => createBtn(cMan, `MANGACOM-${L}`));
     }
@@ -209,18 +203,17 @@
     function createBtn(container, label) {
         const btn = document.createElement('div');
         btn.className = 'piece-btn';
-        btn.innerHTML = `<span>${label}</span> <span class="tag-h">MESA</span>`;
+        btn.innerHTML = `<span>${label}</span> <span class="tag-h">BASE</span>`;
         btn.onclick = () => spawnTable(label + '-1');
         container.appendChild(btn);
     }
 
-    // 3. SPAWN (CREAR MESA)
     window.spawnTable = function(idName) {
         const div = document.createElement('div');
         div.className = 'mesa';
         div.setAttribute('data-info', idName);
         
-        // Posición central relativa
+        // Calcular posición centro
         const rect = viewport.getBoundingClientRect();
         const centerX = (rect.width / 2 - container.getBoundingClientRect().left) / scale;
         const centerY = (rect.height / 2 - container.getBoundingClientRect().top) / scale;
@@ -228,8 +221,8 @@
         const leftP = (centerX / mapImg.naturalWidth) * 100;
         const topP = (centerY / mapImg.naturalHeight) * 100;
 
-        div.style.width = BASE_W + '%';
-        div.style.height = BASE_H + '%';
+        div.style.width = BASE_W_PCT + '%';
+        div.style.height = BASE_H_PCT + '%';
         div.style.top = topP.toFixed(4) + '%';
         div.style.left = leftP.toFixed(4) + '%';
 
@@ -238,7 +231,7 @@
         selectMesa(div);
     }
 
-    // 4. INTERACCIONES
+    // --- INTERACCIONES ---
     function addInteractions(el) {
         el.addEventListener('mousedown', (e) => {
             e.stopPropagation();
@@ -253,21 +246,19 @@
     document.addEventListener('mousemove', (e) => {
         if (!isDragging || !selectedElement) return;
         e.preventDefault();
-
         const containerRect = container.getBoundingClientRect();
         let x = (e.clientX - containerRect.left - dragOffset.x) / scale;
         let y = (e.clientY - containerRect.top - dragOffset.y) / scale;
-
+        
         const leftP = (x / mapImg.naturalWidth) * 100;
         const topP = (y / mapImg.naturalHeight) * 100;
-
+        
         selectedElement.style.left = leftP.toFixed(4) + '%';
         selectedElement.style.top = topP.toFixed(4) + '%';
     });
 
     document.addEventListener('mouseup', () => isDragging = false);
 
-    // 5. SELECCIÓN Y PROPIEDADES
     function selectMesa(el) {
         if(selectedElement) selectedElement.classList.remove('selected');
         selectedElement = el;
@@ -288,22 +279,27 @@
         if(selectedElement) selectedElement.setAttribute('data-info', e.target.value.toUpperCase());
     });
 
-    // 6. FUNCIONES DE EDICIÓN
-    
-    // --- GIRAR (SWAP WIDTH/HEIGHT) ---
+    // --- LÓGICA DE GIRO MATEMÁTICO (CORRECCIÓN DE ASPECTO) ---
     window.rotateSelected = function() {
         if(!selectedElement) return;
-        const currentW = selectedElement.style.width;
-        const currentH = selectedElement.style.height;
         
-        selectedElement.style.width = currentH;
-        selectedElement.style.height = currentW;
+        const currentW_Pct = parseFloat(selectedElement.style.width);
+        const currentH_Pct = parseFloat(selectedElement.style.height);
+
+        // FORMULA MÁGICA:
+        // Nuevo Ancho % = Viejo Alto % * (AltoImagen / AnchoImagen)
+        // Nuevo Alto % = Viejo Ancho % * (AnchoImagen / AltoImagen)
+        
+        const newW_Pct = currentH_Pct * (1 / imgRatio);
+        const newH_Pct = currentW_Pct * imgRatio;
+
+        selectedElement.style.width = newW_Pct.toFixed(4) + '%';
+        selectedElement.style.height = newH_Pct.toFixed(4) + '%';
     }
 
     window.duplicateSelected = function() {
         if(!selectedElement) return;
         const clone = selectedElement.cloneNode(true);
-        
         const oldId = selectedElement.getAttribute('data-info');
         const parts = oldId.split('-');
         if(!isNaN(parts[parts.length-1])) {
@@ -311,16 +307,20 @@
             clone.setAttribute('data-info', parts.join('-'));
         }
 
-        // Inteligencia de duplicado:
-        // Si es más ancha que alta (Horizontal) -> Mueve a la derecha
-        // Si es más alta que ancha (Vertical) -> Mueve abajo
         const wVal = parseFloat(selectedElement.style.width);
         const hVal = parseFloat(selectedElement.style.height);
-        
         let top = parseFloat(selectedElement.style.top);
         let left = parseFloat(selectedElement.style.left);
 
-        if (wVal > hVal) left += (wVal + 0.05); // +0.05 es un pequeño margen
+        // Si es horizontal (ancho > alto corregido por ratio), mueve derecha
+        // Para saber si es horizontal visualmente, comparamos % ajustado
+        // Pero una heurística simple es: si %W > %H * Ratio, es horizontal
+        
+        // Simplificación para duplicar:
+        // Si duplicas algo horizontal, muévelo a la derecha.
+        // Si duplicas algo vertical, muévelo abajo.
+        
+        if (wVal > hVal) left += (wVal + 0.05);
         else top += (hVal + 0.05);
 
         clone.style.top = top.toFixed(4) + '%';
@@ -339,26 +339,20 @@
         }
     }
 
-    // 7. TECLADO
     document.addEventListener('keydown', (e) => {
         if(!selectedElement) return;
-        
-        // Flechas para mover píxel a píxel
         if(e.key.startsWith('Arrow')) {
             e.preventDefault();
             const step = e.shiftKey ? 0.1 : 0.01;
             let t = parseFloat(selectedElement.style.top);
             let l = parseFloat(selectedElement.style.left);
-            
             if(e.key === 'ArrowUp') t -= step;
             if(e.key === 'ArrowDown') t += step;
             if(e.key === 'ArrowLeft') l -= step;
             if(e.key === 'ArrowRight') l += step;
-            
             selectedElement.style.top = t.toFixed(4) + '%';
             selectedElement.style.left = l.toFixed(4) + '%';
         }
-
         if(e.key === 'Delete' || e.key === 'Backspace') {
             if(document.activeElement !== inputId) deleteSelected();
         }
@@ -370,13 +364,12 @@
         }
     });
 
-    // 8. ZOOM Y EXPORTAR
     function handleWheel(e) {
-        if(e.ctrlKey || true) {
+        if(true) {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
             let newScale = scale * delta;
-            if(newScale > 0.05 && newScale < 10) {
+            if(newScale > 0.05 && newScale < 20) { // Zoom ampliado
                 scale = newScale;
                 container.style.transform = `scale(${scale})`;
             }
@@ -400,7 +393,6 @@
         scale = (window.innerWidth / imgWidth) * 0.9;
         container.style.transform = `scale(${scale})`;
     }
-
 </script>
 </body>
 </html>
