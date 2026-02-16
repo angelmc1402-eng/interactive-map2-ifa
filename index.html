@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 2 - Ultimate Builder</title>
+    <title>HALL 2 - Builder V3 (Pro)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --verde-base: #2ecc71;
         --azul-sel: #00d2d3;
         --rojo-del: #ff6b6b;
+        --naranja-rot: #ff9f43;
         --dark-bg: #222f3e;
         --panel-bg: #ffffff;
         --fuente: 'Inter', sans-serif;
@@ -43,7 +44,7 @@
 
     /* PALETA IZQUIERDA */
     #palette {
-        position: fixed; top: 10px; left: 10px; width: 240px; bottom: 10px;
+        position: fixed; top: 10px; left: 10px; width: 250px; bottom: 10px;
         background: var(--panel-bg); padding: 15px; border-radius: 8px;
         box-shadow: 5px 0 30px rgba(0,0,0,0.3); z-index: 20000;
         display: flex; flex-direction: column;
@@ -53,7 +54,7 @@
     
     .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
     
-    .section-group { margin-bottom: 20px; }
+    .section-group { margin-bottom: 15px; }
     .group-title { font-size: 11px; font-weight: 800; color: #888; margin-bottom: 5px; letter-spacing: 1px; }
     
     .piece-btn {
@@ -65,9 +66,7 @@
     .piece-btn:hover { background: #e0e0e0; transform: translateX(2px); border-color: #bbb; }
     .piece-btn:active { transform: scale(0.98); }
     
-    .tag-v { background: #fab1a0; color: #d63031; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
     .tag-h { background: #81ecec; color: #00cec9; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
-    .tag-d { background: #ffeaa7; color: #fdcb6e; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
 
     /* PROPIEDADES (FLOTANTE) */
     #prop-float {
@@ -80,11 +79,12 @@
 
     .btn-action { width: 100%; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 12px; }
     .btn-dup { background: var(--verde-base); color: white; }
+    .btn-rot { background: var(--naranja-rot); color: white; }
     .btn-del { background: var(--rojo-del); color: white; }
 
     /* BARRA EXPORTAR */
     #export-bar {
-        position: fixed; bottom: 20px; left: 270px; right: 20px;
+        position: fixed; bottom: 20px; left: 280px; right: 20px;
         pointer-events: none; display: flex; justify-content: center; z-index: 20000;
     }
     .btn-exp { pointer-events: auto; background: #2d3436; color: #00d2d3; border: 2px solid #00d2d3; padding: 12px 30px; border-radius: 50px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4); transition: transform 0.2s; }
@@ -96,30 +96,30 @@
 <body>
 
     <div id="palette">
-        <h3>🏭 Fábrica de Mesas</h3>
+        <h3>🧩 Piezas Hall 2</h3>
         <div class="scroll-area">
             
             <div class="section-group">
-                <div class="group-title">TCG / SPORT (Estándar)</div>
-                <div id="btn-container-std"></div>
-            </div>
-
-            <div class="section-group">
-                <div class="group-title">DIECAST (Anchas)</div>
+                <div class="group-title">DIECAST (A-D)</div>
                 <div id="btn-container-die"></div>
             </div>
 
             <div class="section-group">
-                <div class="group-title">MANGA / FIGURES</div>
+                <div class="group-title">FIGURES (A-C)</div>
+                <div id="btn-container-fig"></div>
+            </div>
+
+            <div class="section-group">
+                <div class="group-title">MANGACOM (A-B)</div>
                 <div id="btn-container-man"></div>
             </div>
 
         </div>
         <div style="font-size:10px; color:#999; margin-top:10px; text-align:center; border-top:1px solid #eee; padding-top:10px;">
-            Rueda Ratón: <b>ZOOM</b><br>
-            Click + Arrastrar: <b>MOVER PIEZA</b><br>
-            Flechas: <b>PRECISIÓN</b><br>
-            Supr: <b>BORRAR</b>
+            'R' -> <b>GIRAR</b> (Vertical)<br>
+            'D' -> <b>DUPLICAR</b><br>
+            'Supr' -> <b>BORRAR</b><br>
+            Rueda -> <b>ZOOM</b>
         </div>
     </div>
 
@@ -127,8 +127,9 @@
         <label style="font-size:10px; font-weight:bold; color:#999;">ID MESA</label>
         <input type="text" id="inp-id" style="width:100%; padding:8px; border:2px solid #ddd; border-radius:4px; font-weight:bold; font-family:monospace; margin-bottom:10px;">
         
-        <button class="btn-action btn-dup" onclick="duplicateSelected()">DUPLICAR (D)</button>
-        <button class="btn-action btn-del" onclick="deleteSelected()">ELIMINAR (Supr)</button>
+        <button class="btn-action btn-rot" onclick="rotateSelected()">🔄 GIRAR (R)</button>
+        <button class="btn-action btn-dup" onclick="duplicateSelected()">✨ DUPLICAR (D)</button>
+        <button class="btn-action btn-del" onclick="deleteSelected()">🗑️ ELIMINAR</button>
     </div>
 
     <div id="export-bar">
@@ -145,21 +146,18 @@
     <textarea id="clipboard-area"></textarea>
 
 <script>
-    // --- CONFIGURACIÓN DE TAMAÑOS ---
-    const SIZES = {
-        'std-v': { w: 0.2187, h: 1.1726 }, // Vertical Estándar
-        'std-h': { w: 0.8613, h: 0.2977 }, // Horizontal Estándar
-        'wide':  { w: 1.1300, h: 0.2977 }  // Diecast Ancha
-    };
+    // --- DIMENSIONES EXACTAS ---
+    // Horizontal (Base): width: 1.13%, height: 0.2977%
+    // Vertical (Girada): width: 0.2977%, height: 1.13%
+    
+    const BASE_W = 1.13;
+    const BASE_H = 0.2977;
 
-    // --- CONFIGURACIÓN DE BOTONES ---
-    // Añade aquí las letras que necesites
+    // --- GRUPOS ---
     const GROUPS = {
-        'TCG': ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'],
-        'SPORT': ['A','B','C','D','E','F'],
         'DIECAST': ['A','B','C','D'],
-        'MANGA': ['A','B'],
-        'FIGURES': ['A','B']
+        'FIGURES': ['A','B','C'],
+        'MANGACOM': ['A','B']
     };
 
     let scale = 0.2;
@@ -183,7 +181,6 @@
 
     async function init() {
         fit();
-        // Intentar cargar mesas previas
         try {
             const resp = await fetch('mesas.html?v=' + Date.now());
             if(resp.ok) {
@@ -191,66 +188,48 @@
                 document.querySelectorAll('.mesa').forEach(addInteractions);
             }
         } catch(e) {}
-        
-        // Listener de Zoom con Rueda
         viewport.addEventListener('wheel', handleWheel, { passive: false });
     }
 
     // 2. GENERADOR DE BOTONES
     function generateButtons() {
-        // TCG & SPORT (Mezcla de H y V)
-        const cStd = document.getElementById('btn-container-std');
-        ['TCG', 'SPORT'].forEach(cat => {
-            GROUPS[cat].forEach(letra => {
-                createBtn(cStd, `${cat}-${letra}`, 'std-v', 'V');
-                createBtn(cStd, `${cat}-${letra}`, 'std-h', 'H');
-            });
-        });
-
-        // DIECAST (Solo Wide)
+        // Diecast
         const cDie = document.getElementById('btn-container-die');
-        GROUPS['DIECAST'].forEach(letra => {
-            createBtn(cDie, `DIECAST-${letra}`, 'wide', 'W');
-        });
+        GROUPS['DIECAST'].forEach(L => createBtn(cDie, `DIECAST-${L}`));
 
-        // MANGA/FIGURES (Estándar)
+        // Figures
+        const cFig = document.getElementById('btn-container-fig');
+        GROUPS['FIGURES'].forEach(L => createBtn(cFig, `FIGURES-${L}`));
+
+        // Mangacom
         const cMan = document.getElementById('btn-container-man');
-        ['MANGA', 'FIGURES'].forEach(cat => {
-            GROUPS[cat].forEach(letra => {
-                createBtn(cMan, `${cat}-${letra}`, 'std-v', 'V');
-                createBtn(cMan, `${cat}-${letra}`, 'std-h', 'H');
-            });
-        });
+        GROUPS['MANGACOM'].forEach(L => createBtn(cMan, `MANGACOM-${L}`));
     }
 
-    function createBtn(container, label, sizeKey, tag) {
+    function createBtn(container, label) {
         const btn = document.createElement('div');
         btn.className = 'piece-btn';
-        let colorClass = tag === 'V' ? 'tag-v' : (tag === 'W' ? 'tag-d' : 'tag-h');
-        
-        btn.innerHTML = `<span>${label}</span> <span class="${colorClass}">${tag}</span>`;
-        btn.onclick = () => spawnTable(label + '-1', sizeKey);
+        btn.innerHTML = `<span>${label}</span> <span class="tag-h">MESA</span>`;
+        btn.onclick = () => spawnTable(label + '-1');
         container.appendChild(btn);
     }
 
     // 3. SPAWN (CREAR MESA)
-    window.spawnTable = function(idName, sizeKey) {
-        const size = SIZES[sizeKey];
+    window.spawnTable = function(idName) {
         const div = document.createElement('div');
         div.className = 'mesa';
         div.setAttribute('data-info', idName);
         
-        // Calcular centro de la pantalla actual
+        // Posición central relativa
         const rect = viewport.getBoundingClientRect();
         const centerX = (rect.width / 2 - container.getBoundingClientRect().left) / scale;
         const centerY = (rect.height / 2 - container.getBoundingClientRect().top) / scale;
 
-        // Convertir a %
         const leftP = (centerX / mapImg.naturalWidth) * 100;
         const topP = (centerY / mapImg.naturalHeight) * 100;
 
-        div.style.width = size.w + '%';
-        div.style.height = size.h + '%';
+        div.style.width = BASE_W + '%';
+        div.style.height = BASE_H + '%';
         div.style.top = topP.toFixed(4) + '%';
         div.style.left = leftP.toFixed(4) + '%';
 
@@ -288,17 +267,15 @@
 
     document.addEventListener('mouseup', () => isDragging = false);
 
-    // 5. SELECCIÓN
+    // 5. SELECCIÓN Y PROPIEDADES
     function selectMesa(el) {
         if(selectedElement) selectedElement.classList.remove('selected');
         selectedElement = el;
         selectedElement.classList.add('selected');
-        
         propPanel.classList.add('active');
         inputId.value = selectedElement.getAttribute('data-info');
     }
 
-    // Click fuera para deseleccionar
     viewport.addEventListener('mousedown', (e) => {
         if(e.target === viewport || e.target === container || e.target === mapImg) {
             if(selectedElement) selectedElement.classList.remove('selected');
@@ -307,30 +284,26 @@
         }
     });
 
-    // Actualizar nombre en tiempo real
     inputId.addEventListener('input', (e) => {
         if(selectedElement) selectedElement.setAttribute('data-info', e.target.value.toUpperCase());
     });
 
-    // 6. ZOOM CON RUEDA (MEJORADO)
-    function handleWheel(e) {
-        if(e.ctrlKey || e.metaKey || true) { // Siempre activo
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            let newScale = scale * delta;
-            if(newScale > 0.05 && newScale < 10) {
-                scale = newScale;
-                container.style.transform = `scale(${scale})`;
-            }
-        }
+    // 6. FUNCIONES DE EDICIÓN
+    
+    // --- GIRAR (SWAP WIDTH/HEIGHT) ---
+    window.rotateSelected = function() {
+        if(!selectedElement) return;
+        const currentW = selectedElement.style.width;
+        const currentH = selectedElement.style.height;
+        
+        selectedElement.style.width = currentH;
+        selectedElement.style.height = currentW;
     }
 
-    // 7. DUPLICAR Y BORRAR
     window.duplicateSelected = function() {
         if(!selectedElement) return;
         const clone = selectedElement.cloneNode(true);
         
-        // Auto-incrementar ID
         const oldId = selectedElement.getAttribute('data-info');
         const parts = oldId.split('-');
         if(!isNaN(parts[parts.length-1])) {
@@ -338,16 +311,17 @@
             clone.setAttribute('data-info', parts.join('-'));
         }
 
-        // Desplazamiento inteligente
-        const w = parseFloat(selectedElement.style.width);
-        const h = parseFloat(selectedElement.style.height);
+        // Inteligencia de duplicado:
+        // Si es más ancha que alta (Horizontal) -> Mueve a la derecha
+        // Si es más alta que ancha (Vertical) -> Mueve abajo
+        const wVal = parseFloat(selectedElement.style.width);
+        const hVal = parseFloat(selectedElement.style.height);
+        
         let top = parseFloat(selectedElement.style.top);
         let left = parseFloat(selectedElement.style.left);
 
-        // Si es más ancha que alta -> Duplicar a la derecha
-        if(w > h) left += (w + 0.02); 
-        // Si es más alta que ancha -> Duplicar abajo
-        else top += (h + 0.02);
+        if (wVal > hVal) left += (wVal + 0.05); // +0.05 es un pequeño margen
+        else top += (hVal + 0.05);
 
         clone.style.top = top.toFixed(4) + '%';
         clone.style.left = left.toFixed(4) + '%';
@@ -365,14 +339,14 @@
         }
     }
 
-    // 8. TECLADO
+    // 7. TECLADO
     document.addEventListener('keydown', (e) => {
         if(!selectedElement) return;
         
-        // Movimiento fino
+        // Flechas para mover píxel a píxel
         if(e.key.startsWith('Arrow')) {
             e.preventDefault();
-            const step = e.shiftKey ? 0.1 : 0.01; // Shift para ir más rápido
+            const step = e.shiftKey ? 0.1 : 0.01;
             let t = parseFloat(selectedElement.style.top);
             let l = parseFloat(selectedElement.style.left);
             
@@ -388,13 +362,27 @@
         if(e.key === 'Delete' || e.key === 'Backspace') {
             if(document.activeElement !== inputId) deleteSelected();
         }
-        
         if(e.key.toLowerCase() === 'd') {
             if(document.activeElement !== inputId) duplicateSelected();
         }
+        if(e.key.toLowerCase() === 'r') {
+            if(document.activeElement !== inputId) rotateSelected();
+        }
     });
 
-    // 9. EXPORTAR
+    // 8. ZOOM Y EXPORTAR
+    function handleWheel(e) {
+        if(e.ctrlKey || true) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            let newScale = scale * delta;
+            if(newScale > 0.05 && newScale < 10) {
+                scale = newScale;
+                container.style.transform = `scale(${scale})`;
+            }
+        }
+    }
+
     window.exportHTML = function() {
         let html = "";
         document.querySelectorAll('.mesa').forEach(m => {
@@ -404,7 +392,7 @@
         area.value = html;
         area.select();
         document.execCommand('copy');
-        alert("¡Copiado! " + document.querySelectorAll('.mesa').length + " mesas listas.");
+        alert("¡Copiado! " + document.querySelectorAll('.mesa').length + " mesas.");
     }
 
     function fit() {
