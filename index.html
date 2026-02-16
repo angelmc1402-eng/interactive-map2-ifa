@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HALL 2 - Interactive Map</title>
+    <title>HALL 2 - Interactive Map Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -15,6 +15,7 @@
         --fuente: 'Inter', sans-serif;
     }
 
+    /* Reset y Scroll suave en móvil */
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
     
     #viewport { 
@@ -30,31 +31,34 @@
         transform-origin: 0 0; 
         transition: transform 0.2s ease-out; 
         display: inline-block;
+        /* Truco anti-parpadeo para el mapa completo */
         transform: translateZ(0);
     }
 
+    /* Modificado para adaptarse a cualquier tamaño de imagen automáticamente */
     img { display: block; image-rendering: high-quality; max-width: none; }
 
     /* MESAS */
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
-        z-index: 10; 
+        z-index: 10; /* Nivel base */
         border-radius: 4px; cursor: pointer; 
+        /* Truco para que cada mesa tenga su propia capa y no parpadee */
         transform: translateZ(0); 
     }
     
-    /* Diferenciación visual opcional para Commercial */
+    /* Estilo opcional para diferenciar las Commercial visualmente */
     .mesa.commercial { border-color: #3498db; background: rgba(52, 152, 219, 0.25); }
-    
+
     .mesa.agotada {
         background: rgba(231, 76, 60, 0.4) !important;
         border-color: var(--rojo-sold) !important;
-        pointer-events: none;
     }
 
+    /* --- CORRECCIÓN Z-INDEX --- */
     .mesa:hover, .mesa:active { 
-        z-index: 9999 !important; 
+        z-index: 9999 !important; /* ¡Subir al cielo! */
         border-color: white; 
         box-shadow: 0 0 20px rgba(255,255,255,0.5); 
     }
@@ -67,9 +71,10 @@
         box-shadow: 0 20px 50px rgba(0,0,0,0.25);
         opacity: 0; pointer-events: none; transition: all 0.2s ease;
         overflow: hidden; display: flex; flex-direction: column;
-        z-index: 10000; 
+        z-index: 10000; /* Aseguramos que el tooltip esté encima de la propia mesa */
     }
 
+    /* Mostrar tooltip al pasar ratón o tocar */
     .mesa:hover .custom-tooltip-wrapper,
     .mesa:active .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -81,7 +86,7 @@
     .tooltip-footer { padding: 14px; font-size: 18px; font-weight: 700; color: white; background: var(--verde-deep); display: flex; justify-content: center; }
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
     
-    /* Color azul para footer de mesas Commercial */
+    /* Footer azul para commercial */
     .mesa.commercial .tooltip-footer { background: #3498db; }
 
     /* CONTROLES */
@@ -122,7 +127,7 @@
     const viewport = document.getElementById('viewport');
     const mapImg = document.getElementById('map-img');
     
-    // URL CSV - Asegúrate de que los IDs coinciden (TCG-G-1, etc.)
+    // Asegúrate de que esta URL sea la de tu hoja compartida (la misma que Hall 1 o la nueva)
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
 
     async function cargarMesas() {
@@ -140,17 +145,17 @@
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                // --- LÓGICA DE PRECIOS ACTUALIZADA ---
+                // --- CAMBIO 2: LÓGICA DE PRECIOS PARA HALL 2 ---
                 
-                // 1. Por defecto todo es Collector a 70€
+                // Por defecto, en Hall 2 todo es Collector (70€)
                 let type = "Collector Table";
                 let price = "70,00 €";
 
-                // 2. Excepción: DIECAST-A y DIECAST-B son Commercial a 100€
+                // Excepción: Solo DIECAST A y B son Commercial (100€)
                 if (info.startsWith("DIECAST-A") || info.startsWith("DIECAST-B")) {
                     type = "Commercial Table";
                     price = "175,00 €";
-                    m.classList.add('commercial'); // Clase extra para diferenciar color si quieres
+                    m.classList.add('commercial'); // Añadimos clase por si queremos estilo azul
                 }
 
                 const isAgotada = m.classList.contains('agotada');
@@ -166,7 +171,8 @@
                     </div>`;
             });
             
-            if(mapImg.complete) fit();
+            // Esperar a la imagen para calcular el FIT correcto
+            if (mapImg.complete) fit();
             else mapImg.onload = fit;
 
         } catch (e) { console.error("Error:", e); }
@@ -182,13 +188,22 @@
             filas.forEach((fila, index) => {
                 if (index === 0 || !fila.trim()) return;
                 const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                // MANTENEMOS LÓGICA DE COLUMNAS DEL HALL 1
                 if (columnas.length >= 3) {
+                    // Columna 1 [Indice 1] = ESTADO
                     const estado = columnas[1].replace(/["']/g, "").trim().toUpperCase(); 
+                    // Columna 2 [Indice 2] = ID MESA
                     const idMesa = columnas[2].replace(/["']/g, "").trim(); 
+                    
                     const mesaDiv = document.querySelector(`[data-info="${idMesa}"]`);
+                    
                     if (mesaDiv) {
-                        if (estado === "VENDIDA") mesaDiv.classList.add('agotada');
-                        else mesaDiv.classList.remove('agotada');
+                        if (estado.includes("VENDIDA") || estado.includes("SOLD")) {
+                            mesaDiv.classList.add('agotada');
+                        } else {
+                            mesaDiv.classList.remove('agotada');
+                        }
                     }
                 }
             });
@@ -197,7 +212,7 @@
 
     function zoom(f) { 
         let newScale = scale * f;
-        if (newScale >= 0.01 && newScale <= 3.0) {
+        if (newScale >= 0.01 && newScale <= 0.8) {
             scale = newScale;
             container.style.transform = `scale(${scale})`; 
         }
@@ -212,6 +227,7 @@
     }
 
     function fit() { 
+        // CAMBIO 3: Detección automática del ancho para Hall 2
         const imgWidth = mapImg.naturalWidth || 5000;
         scale = (window.innerWidth / imgWidth) * 0.9; 
         if(scale < 0.01) scale = 0.01;
