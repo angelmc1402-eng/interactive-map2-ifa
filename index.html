@@ -12,10 +12,12 @@
         --verde-sport: #00ffb4;
         --rojo-sold: #e74c3c;
         --text-gray: #95a5a6;
+        --gris-coming-bg: rgba(189, 195, 199, 0.5);
+        --gris-coming-border: #bdc3c7;
+        --gris-coming-footer: #7f8c8d; /* Gris elegante para el faldón */
         --fuente: 'Inter', sans-serif;
     }
 
-    /* Reset y Scroll suave en móvil */
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; font-family: var(--fuente); }
     
     #viewport { 
@@ -31,7 +33,6 @@
         transform-origin: 0 0; 
         transition: transform 0.2s ease-out; 
         display: inline-block;
-        /* Truco anti-parpadeo para el mapa completo */
         transform: translateZ(0);
     }
 
@@ -41,9 +42,8 @@
     .mesa { 
         position: absolute; border: 2px solid var(--verde-base); 
         background: rgba(46, 204, 113, 0.25); box-sizing: border-box; 
-        z-index: 10; /* Nivel base */
+        z-index: 10; 
         border-radius: 4px; cursor: pointer; 
-        /* Truco para que cada mesa tenga su propia capa y no parpadee */
         transform: translateZ(0); 
     }
     
@@ -52,13 +52,19 @@
     .mesa.agotada {
         background: rgba(231, 76, 60, 0.4) !important;
         border-color: var(--rojo-sold) !important;
-        /* Quitamos pointer-events none para que salga el tooltip de SOLD OUT */
         cursor: not-allowed; 
     }
 
-    /* --- CORRECCIÓN Z-INDEX --- */
+    /* --- ESTILO COMING SOON (Todo Gris) --- */
+    .mesa.coming-soon {
+        background: var(--gris-coming-bg) !important; 
+        border-color: var(--gris-coming-border) !important;      
+        cursor: not-allowed; 
+    }
+
+    /* Z-INDEX */
     .mesa:hover, .mesa:active { 
-        z-index: 9999 !important; /* ¡Subir al cielo! */
+        z-index: 9999 !important; 
         border-color: white; 
         box-shadow: 0 0 20px rgba(255,255,255,0.5); 
     }
@@ -71,10 +77,9 @@
         box-shadow: 0 20px 50px rgba(0,0,0,0.25);
         opacity: 0; pointer-events: none; transition: all 0.2s ease;
         overflow: hidden; display: flex; flex-direction: column;
-        z-index: 10000; /* Aseguramos que el tooltip esté encima de la propia mesa */
+        z-index: 10000; 
     }
 
-    /* Mostrar tooltip al pasar ratón o tocar */
     .mesa:hover .custom-tooltip-wrapper,
     .mesa:active .custom-tooltip-wrapper { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -83,10 +88,19 @@
     .tooltip-cell:first-child { border-right: 1px solid #edf2f7; }
     .tooltip-label { color: var(--text-gray); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
     .tooltip-value { font-size: 26px; font-weight: 800; color: #2d3748; }
+    
+    /* Footer Base (Verde) */
     .tooltip-footer { padding: 14px; font-size: 18px; font-weight: 700; color: white; background: var(--verde-deep); display: flex; justify-content: center; }
     
+    /* Colores Footer Específicos */
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
     .mesa.commercial .tooltip-footer { background: #3498db; }
+    
+    /* Footer Coming Soon -> GRIS */
+    .mesa.coming-soon .tooltip-footer { 
+        background: var(--gris-coming-footer) !important; 
+        letter-spacing: 2px;
+    }
 
     /* CONTROLES */
     .controls-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 10000; }
@@ -143,32 +157,35 @@
                 let section = parts.length >= 2 ? parts[0] + "-" + parts[1] : info;
                 let tableNum = parts.length >= 3 ? parts[2] : "0";
 
-                // --- 1. Nombres Bonitos ---
+                let footerText = "";
                 let displaySection = section;
-                if (info.includes("MANGACOM")) {
-                    displaySection = "Manga & Comic - " + parts[1];
-                } else if (info.includes("FIGURES")) {
-                    displaySection = "Figures & Dolls - " + parts[1];
-                }
 
-                // --- 2. LÓGICA DE PRECIOS Y ETIQUETAS ---
-                let type = "Collector Table";
-                let price = "70,00 €";
+                // 1. DETECTAR SI ES COMING SOON (MANGA O FIGURES)
+                if (info.includes("MANGACOM") || info.includes("FIGURES")) {
+                    
+                    // Nombres bonitos
+                    if (info.includes("MANGACOM")) displaySection = "Manga & Comic - " + parts[1];
+                    if (info.includes("FIGURES")) displaySection = "Figures & Dolls - " + parts[1];
 
-                // CASO 1: DIECAST A y B (Comerciales)
-                if (info.startsWith("DIECAST-A") || info.startsWith("DIECAST-B")) {
-                    type = "Commercial Table";
-                    price = "175,00 €";
-                    m.classList.add('commercial'); 
-                }
-                // CASO 2: MANGA Y FIGURAS (Etiqueta especial "Table Price", mismo precio 70€)
-                else if (info.includes("MANGACOM") || info.includes("FIGURES")) {
-                    type = "Table Price";
-                    price = "70,00 €";
-                }
+                    // Estilo Coming Soon (Gris) y Footer (Gris Oscuro)
+                    m.classList.add('coming-soon');
+                    footerText = "COMING SOON";
 
-                const isAgotada = m.classList.contains('agotada');
-                const footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
+                } else {
+                    // 2. LÓGICA ACTIVA (DIECAST)
+                    let type = "Collector Table";
+                    let price = "70,00 €";
+
+                    if (info.startsWith("DIECAST-A") || info.startsWith("DIECAST-B")) {
+                        type = "Commercial Table";
+                        price = "175,00 €";
+                        m.classList.add('commercial'); 
+                    }
+
+                    // Chequear stock (Solo para las que NO son Coming Soon)
+                    const isAgotada = m.classList.contains('agotada');
+                    footerText = isAgotada ? "SOLD OUT" : `${type}  •  ${price}`;
+                }
 
                 m.innerHTML = `
                     <div class="custom-tooltip-wrapper">
@@ -233,7 +250,6 @@
 
     function fit() { 
         const imgWidth = mapImg.naturalWidth || 5000;
-        // Escala inicial pequeña (0.6) para ver el mapa completo
         scale = (window.innerWidth / imgWidth) * 0.6; 
         
         if(scale < 0.01) scale = 0.01;
